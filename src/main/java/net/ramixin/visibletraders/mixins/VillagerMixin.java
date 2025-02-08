@@ -17,7 +17,7 @@ import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
 import net.ramixin.visibletraders.VillagerDuck;
-import org.jetbrains.annotations.NotNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
@@ -33,15 +33,13 @@ import java.util.List;
 @Mixin(Villager.class)
 public abstract class VillagerMixin extends AbstractVillager implements ReputationEventHandler, VillagerDataHolder, VillagerDuck {
 
-    @Shadow public abstract @NotNull VillagerData getVillagerData();
+    @Shadow public abstract @NonNull VillagerData getVillagerData();
 
-    @Shadow public abstract void setVillagerData(@NotNull VillagerData villagerData);
+    @Shadow public abstract void setVillagerData(@NonNull VillagerData villagerData);
 
     @Shadow public abstract void updateTrades();
 
-    @Shadow public abstract boolean isClientSide();
-
-    @Shadow public abstract void onReputationEventFrom(@NotNull ReputationEventType reputationEventType, @NotNull Entity entity);
+    @Shadow public abstract void onReputationEventFrom(@NonNull ReputationEventType reputationEventType, @NonNull Entity entity);
 
     @Unique
     private static final Logger visibleTraders_NeoForge$visibleTradersLogger = LoggerFactory.getLogger("Visible Traders");
@@ -61,8 +59,6 @@ public abstract class VillagerMixin extends AbstractVillager implements Reputati
 
     @Inject(method = "addAdditionalSaveData", at = @At("HEAD"))
     private void writeOfferingLevel(CompoundTag compoundTag, CallbackInfo ci) {
-        if(!this.isClientSide()) for(int i = 0; i < 5; i++) visibleTraders_NeoForge$lockedTradesTick();
-
         if(this.visibleTraders_NeoForge$lockedOffers == null) return;
         DataResult<Tag> val = Codec.list(MerchantOffers.CODEC).encodeStart(this.registryAccess().createSerializationContext(NbtOps.INSTANCE), this.visibleTraders_NeoForge$lockedOffers);
         if(val.isError()) //noinspection OptionalGetWithoutIsPresent
@@ -116,6 +112,7 @@ public abstract class VillagerMixin extends AbstractVillager implements Reputati
     @Inject(method = "tick", at = @At("HEAD"))
     private void updateLockedTradesOnTick(CallbackInfo ci) {
         if(this.isClientSide()) return;
+        if(!this.level().hasChunk((int) (this.getX() / 16), (int) (this.getZ() / 16))) return;
 
         visibleTraders_NeoForge$lockedTradesTick();
     }
@@ -145,6 +142,11 @@ public abstract class VillagerMixin extends AbstractVillager implements Reputati
     @Inject(method = "increaseMerchantCareer", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/npc/Villager;updateTrades()V"))
     private void updateLastKnownLevelOnCareerIncrease(CallbackInfo ci) {
         this.visibleTraders_NeoForge$prevLevel = this.getVillagerData().getLevel();
+    }
+
+    @Override
+    public void visibleTraders$forceTradeGeneration() {
+        for(int i = 0; i < 5; i++) visibleTraders_NeoForge$lockedTradesTick();
     }
 
     @Override
