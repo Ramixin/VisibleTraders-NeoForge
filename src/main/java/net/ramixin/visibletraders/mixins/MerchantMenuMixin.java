@@ -4,8 +4,8 @@ import net.minecraft.world.inventory.MerchantMenu;
 import net.minecraft.world.item.trading.Merchant;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
-import net.ramixin.visibletraders.ClientSideMerchantDuck;
-import net.ramixin.visibletraders.MerchantMenuDuck;
+import net.ramixin.visibletraders.ducks.ClientSideMerchantDuck;
+import net.ramixin.visibletraders.ducks.MerchantMenuDuck;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -20,19 +20,18 @@ import java.util.List;
 public abstract class MerchantMenuMixin implements MerchantMenuDuck {
 
     @Shadow private int merchantLevel;
-    @Shadow @Final
-    private Merchant trader;
+    @Shadow @Final private Merchant trader;
 
     @Shadow public abstract MerchantOffers getOffers();
 
     @Unique
-    private int visibleTraders_NeoForge$unlockedTradeCount = 0;
+    private int visibleTraders$unlockedTradeCount = 0;
 
     @Inject(method = "setMerchantLevel", at = @At("TAIL"))
     private void readUnlockedTradeCountFromLevel(int i, CallbackInfo ci) {
-        visibleTraders_NeoForge$unlockedTradeCount = i >> 8;
+        visibleTraders$unlockedTradeCount = i >> 8;
         if(this.trader instanceof ClientSideMerchantDuck duck) {
-            List<MerchantOffer> list = getOffers().subList(0, visibleTraders_NeoForge$unlockedTradeCount);
+            List<MerchantOffer> list = getOffers().subList(0, visibleTraders$unlockedTradeCount);
             MerchantOffers offers = new MerchantOffers();
             offers.addAll(list);
             duck.visibleTraders$setClientUnlockedTrades(offers);
@@ -43,7 +42,7 @@ public abstract class MerchantMenuMixin implements MerchantMenuDuck {
 
     @Override
     public boolean visibleTraders$shouldAllowTrade(int i) {
-        if(visibleTraders_NeoForge$unlockedTradeCount == 0) return true;
-        return i <= visibleTraders_NeoForge$unlockedTradeCount -1;
+        if(visibleTraders$unlockedTradeCount == 0) return true;
+        return i <= visibleTraders$unlockedTradeCount -1;
     }
 }

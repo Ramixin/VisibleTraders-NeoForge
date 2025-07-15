@@ -1,4 +1,4 @@
-package net.ramixin.visibletraders;
+package net.ramixin.visibletraders.ducks;
 
 public interface MerchantMenuDuck {
 

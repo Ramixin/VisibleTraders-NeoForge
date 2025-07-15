@@ -9,8 +9,9 @@
     "MerchantContainerMixin",
     "MerchantMenuMixin",
     "MerchantMixin",
-    "ServerPlayerMixin",
-    "VillagerMixin"
+    "VillagerMixin",
+    "ZombieMixin",
+    "ZombieVillagerMixin"
   ],
   "client": [
     "MerchantScreenMixinClient"

@@ -7,7 +7,7 @@ import net.minecraft.client.gui.screens.inventory.MerchantScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MerchantMenu;
-import net.ramixin.visibletraders.MerchantMenuDuck;
+import net.ramixin.visibletraders.ducks.MerchantMenuDuck;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
