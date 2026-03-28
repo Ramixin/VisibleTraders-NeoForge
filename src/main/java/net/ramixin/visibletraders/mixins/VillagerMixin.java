@@ -1,11 +1,13 @@
 package net.ramixin.visibletraders.mixins;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ReputationEventHandler;
-import net.minecraft.world.entity.npc.AbstractVillager;
-import net.minecraft.world.entity.npc.Villager;
-import net.minecraft.world.entity.npc.VillagerData;
-import net.minecraft.world.entity.npc.VillagerDataHolder;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.entity.npc.villager.VillagerData;
+import net.minecraft.world.entity.npc.villager.VillagerDataHolder;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
@@ -40,19 +42,19 @@ public abstract class VillagerMixin extends AbstractVillager implements Reputati
 
     @Unique
     private void visibleTraders$ifPresent(Consumer<LockedTradeData> consumer) {
-        LockedTradeData val = visibleTraders$lockedTradeData.getValue();
+        LockedTradeData val = visibleTraders$lockedTradeData.get();
         if(val == null) return;
         consumer.accept(val);
     }
 
     @Inject(method = "addAdditionalSaveData", at = @At("HEAD"))
-    private void saveLockedTradeData(ValueOutput valueOutput, CallbackInfo ci) {
-        visibleTraders$ifPresent(data -> data.write(valueOutput));
+    private void saveLockedTradeData(ValueOutput output, CallbackInfo ci) {
+        visibleTraders$ifPresent(data -> data.write(output));
     }
 
     @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
-    private void readLockedTradeData(ValueInput valueInput, CallbackInfo ci) {
-        visibleTraders$lockedTradeData.setValue(new LockedTradeData(valueInput));
+    private void readLockedTradeData(ValueInput input, CallbackInfo ci) {
+        visibleTraders$lockedTradeData.setValue(LockedTradeData.constructOrNull(input, this));
     }
 
     @Inject(method = "tick", at = @At("TAIL"))
@@ -85,6 +87,23 @@ public abstract class VillagerMixin extends AbstractVillager implements Reputati
         return result.get();
     }
 
+    @WrapOperation(method = "customServerAiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/npc/villager/Villager;isTrading()Z", ordinal = 0))
+    private boolean preventUpgradeIfStillGeneratingTrades(Villager instance, Operation<Boolean> original) {
+        boolean originalResult = original.call(instance);
+        if(originalResult) return true;
+        if(visibleTraders$lockedTradeData.get() == null) return false;
+        LockedTradeData data = visibleTraders$lockedTradeData.get();
+        Optional<MerchantOffers> maybeSoonOffers = data.peekTradeSet();
+        if(maybeSoonOffers.isEmpty()) return false;
+//        for(MerchantOffer offer : maybeSoonOffers.get()) {
+//            if(offer instanceof FutureMerchantOffer futureOffer) {
+//                if(!futureOffer.isFulfilled()) return true;
+//            }
+//        }
+        return false;
+    }
+
+
     @Override
     public void visibleTraders$setLockedTradeData(LockedTradeData data) {
         this.visibleTraders$lockedTradeData.setValue(data);
@@ -92,7 +111,7 @@ public abstract class VillagerMixin extends AbstractVillager implements Reputati
 
     @Override
     public Optional<LockedTradeData> visibleTraders$getLockedTradeData() {
-        return Optional.ofNullable(visibleTraders$lockedTradeData.getValue());
+        return Optional.ofNullable(visibleTraders$lockedTradeData.get());
     }
 
     @Override
@@ -111,7 +130,7 @@ public abstract class VillagerMixin extends AbstractVillager implements Reputati
     public MerchantOffers visibleTraders$getCombinedOffers() {
         MerchantOffers offers = new MerchantOffers();
         offers.addAll(this.offers);
-        if(visibleTraders$lockedTradeData.getValue() == null)
+        if(visibleTraders$lockedTradeData.get() == null)
             visibleTrades$regenerateTrades();
         visibleTraders$ifPresent(data -> offers.addAll(data.buildLockedOffers()));
         return offers;

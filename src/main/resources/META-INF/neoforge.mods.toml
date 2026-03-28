@@ -21,9 +21,9 @@ side = "BOTH"
 [[dependencies."${mod_id}"]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21.5,1.22)"
+versionRange = "[26.1,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[accessTransformers]]
-file="META-INF/accesstransformer.cfg"
+file="accesstransformer.cfg"
